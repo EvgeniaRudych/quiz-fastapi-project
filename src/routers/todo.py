@@ -1,13 +1,13 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
 
-app = FastAPI()
+router = APIRouter()
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     return {"status": "Working"}
 
 
-@app.get("/hello/{name}")
+@router.get("/hello/{name}")
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
