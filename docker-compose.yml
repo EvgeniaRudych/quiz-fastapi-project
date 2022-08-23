@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+
+  dev_redis:
+    image: redis:5
+    ports:
+      - "6379:6379"
+
+  dev_db:
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    hostname: 127.0.0.1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+volumes:
+  postgres_data:
