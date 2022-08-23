@@ -14,3 +14,6 @@ uvicorn==0.18.2
 uvloop==0.16.0
 watchfiles==0.16.1
 websockets==10.3
+
+MyApplication~=0.1.0
+databases~=0.6.1
