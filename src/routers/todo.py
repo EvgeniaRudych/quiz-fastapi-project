@@ -17,12 +17,3 @@ async def root():
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
 
-
-class Config(BaseSettings):
-    # The default URL expects the app to run using Docker and docker-compose.
-    redis_url: str = 'redis://redis:6379'
-
-
-log = logging.getLogger(__name__)
-config = Config()
-app = FastAPI(title='FastAPI Redis Tutorial')
