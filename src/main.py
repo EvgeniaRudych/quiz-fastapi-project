@@ -8,16 +8,21 @@ from starlette.routing import Mount
 app = FastAPI()
 
 
-def get_database(request: Request) -> Database:
-    return request.app.state.database
-
-
 def inject_db(app: FastApi, db: Database):
     app.state.database = db
     for route in app.router.routes:
         if isinstance(route, Mount):
             route.app.state.database = db
 
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
 
 app.include_router(router)
 

@@ -1,14 +1,10 @@
-from database import SessionLocal, engine
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
+from starlette.requests import Request
+from databases import Database
 
 app = FastAPI()
 
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def get_database(request: Request) -> Database:
+    return request.app.state.database
