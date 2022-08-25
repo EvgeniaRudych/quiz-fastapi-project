@@ -1,8 +1,32 @@
+import databases
 import uvicorn
 from fastapi import FastAPI
+from config import system_config
 from routers.todo import router
+from databases import Database
+from starlette.routing import Mount
 
 app = FastAPI()
+db = databases.Database(system_config.db_url)
+
+
+def inject_db(app: FastAPI, db: Database):
+    app.state.database = db
+    for route in app.router.routes:
+        if isinstance(route, Mount):
+            route.app.state.database = db
+
+
+@app.on_event("startup")
+async def startup():
+    await db.connect()
+    inject_db(app, db)
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await db.disconnect()
+
 
 app.include_router(router)
 
