@@ -9,6 +9,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+src/alembic
 build/
 develop-eggs/
 dist/
