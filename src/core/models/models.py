@@ -19,7 +19,7 @@ class Password(Base):
     __tablename__ = "password"
 
     id = Column(Integer, primary_key=True, index=True)
-    password = Column(String, unique=True, index=True)
+    password = Column(String, index=True)
 
 
 class User(Base):
@@ -27,7 +27,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
-    name = Column(String, unique=True, index=True)
+    name = Column(String, index=True)
     is_superuser = Column(Boolean, default=False)
     password_id = relationship("Password", back_populates="password")
     created_at = Column(DateTime, default=datetime.now())
@@ -38,7 +38,7 @@ class Categories(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
+    name = Column(String,  index=True)
     description = Column(String, index=True)
 
 
@@ -46,7 +46,7 @@ class Quizzes(Base):
     __tablename__ = "quizzes"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, unique=True, nullable=False)
+    title = Column(String, index=True, nullable=False)
     description = Column(String, index=True, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
