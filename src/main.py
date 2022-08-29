@@ -1,12 +1,14 @@
 import databases
-import uvicorn
 from fastapi import FastAPI
+import uvicorn
 from config import system_config
 from routers.todo import router
 from databases import Database
 from starlette.routing import Mount
 
 app = FastAPI()
+app.include_router(router)
+
 db = databases.Database(system_config.db_url)
 
 
@@ -27,8 +29,6 @@ async def startup():
 async def shutdown():
     await db.disconnect()
 
-
-app.include_router(router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8080)

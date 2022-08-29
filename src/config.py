@@ -16,6 +16,10 @@ class SystemConfig:
     redis_host = os.getenv("REDIS_HOST")
     redis_port = os.getenv("REDIS_PORT")
     db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    domain = os.getenv("DOMAIN")
+    api_audience = os.getenv("API_AUDIENCE")
+    issuer = os.getenv("ISSUER")
+    algorithms = os.getenv("ALGORITHMS")
 
 
 system_config = SystemConfig()
