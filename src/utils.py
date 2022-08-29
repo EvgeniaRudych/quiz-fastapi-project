@@ -56,8 +56,7 @@ class VerifyToken():
         return payload
 
 
-# что у меня есть: в пайдентик модель должна записаться инфа с токена. Вопрос: как ее записать туда
-# потом я просто отдаю в ретурн это
+
 
 def get_user_info(token=Depends(token_auth_scheme)):
     try:
