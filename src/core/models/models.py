@@ -1,5 +1,4 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, true, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -11,8 +10,7 @@ class Quiz_result(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_score = Column(Float, nullable=False)
     max_score = Column(Float, nullable=False)
-    finished_at = Column(DateTime, default=datetime.now())
-    user_id = Column(DateTime, default=datetime.now())
+    user_id = Column(ForeignKey("user.id"))
 
 
 class Password(Base):
@@ -30,15 +28,14 @@ class User(Base):
     name = Column(String, index=True)
     is_superuser = Column(Boolean, default=False)
     password_id = relationship("Password", back_populates="password")
-    created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, default=datetime.now())
+
 
 
 class Categories(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String,  index=True)
+    name = Column(String, index=True)
     description = Column(String, index=True)
 
 
