@@ -107,10 +107,8 @@ async def create_quiz(database=Depends(get_database), quiz: QuizzesInput = Depen
                       token: str = Depends(get_user_info)):
     query = quizzes.insert().values(title=quiz.title, description=quiz.description, is_active=quiz.is_active)
     record_id = await database.execute(query)
-    print(record_id)
     query = quizzes.select().where(quizzes.c.id == record_id)
     row = await database.fetch_one(query)
-    print(row)
     return {**row}
 
 
@@ -201,7 +199,6 @@ async def see_results_of_all_users(database=Depends(get_database)):
 
 @router.get("/api/v1/results/{id}/", response_model=QuizResult, status_code=200)
 async def see_results_of_user(id: int, database=Depends(get_database), token: str = Depends(get_user_info)):
-    query = quiz_result.select().where(quiz_result.c.user_id == id)
-    print(query)
+    query = quiz_result.select().where(quiz_result.c.id == id)
     result = await database.fetch_one(query)
     return result
