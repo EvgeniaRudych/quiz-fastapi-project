@@ -1,3 +1,6 @@
+import csv
+import os
+import pathlib
 from datetime import datetime
 from typing import List
 
@@ -79,7 +82,6 @@ quiz_result = sqlalchemy.Table(
 
 @router.get("/")
 async def healthcheck(request: Request):
-    print(request.app.state.database)
     return {"status": "Working"}
 
 
@@ -105,7 +107,8 @@ async def get_list_of_quizzes(database=Depends(get_database), token: str = Depen
 @router.post("/api/v1/quizzes/", response_model=Quizzes, status_code=status.HTTP_201_CREATED)
 async def create_quiz(database=Depends(get_database), quiz: QuizzesInput = Depends(),
                       token: str = Depends(get_user_info)):
-    query = quizzes.insert().values(title=quiz.title, description=quiz.description, is_active=quiz.is_active)
+    query = quizzes.insert().values(title=quiz.title, description=quiz.description, is_active=quiz.is_active).returning(
+        quizzes.c.title, quizzes.c.description, quizzes.c.is_active)
     record_id = await database.execute(query)
     query = quizzes.select().where(quizzes.c.id == record_id)
     row = await database.fetch_one(query)
@@ -162,17 +165,28 @@ async def pass_quizzes(id: int, answers_input: List[AnswerInput], database=Depen
                                                     max_score=0, finished_at=datetime.now(), user_id=token.azp,
                                                     quiz_id=id)
     quiz_final_res = await database.execute(query_insert_score)
-    print(quiz_final_res)
-    get_user_results(token.azp, quiz_id=id, quiz_result_id=quiz_final_res, user_answers=answers_input, redis_client=redis)
+    get_user_results(token.azp, quiz_id=id, quiz_result_id=quiz_final_res, user_answers=answers_input,
+                     redis_client=redis, quiz_score=quiz_score)
     return {"user_score": quiz_score}
 
 
-def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_client: Redis):
+# мій алгоритм csv: створюю файл і записую туди скор юзера.
+# далі роблю перевірку у редісі чи існують результати користувача
+# якщо вони існують, то теж записуємо їх у файл, усі файли зберігаємо у папку storage
+# далі функція повертає файл.
+# question_id, answer
+def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_client: Redis, quiz_score):
     redis_key = f"{user_id}:{quiz_id}:{quiz_result_id}"
     res_to_save = {}
     for i in user_answers:
         res_to_save[i.question_id] = i.answer_text
     redis_client.hset(name=redis_key, mapping=res_to_save)
+    with open(f"/home/evgenia/PycharmProjects/app/storage/{user_id}.csv", 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        writer.writerow(["user_id","question&answer"])
+        if redis_client.hgetall(name=redis_key) is not None:
+            writer.writerow([user_id, redis_client.hgetall(name=redis_key)])
+            return f
 
 
 @router.patch("/api/v1/quizzes/{id}/", response_model=Quizzes, status_code=200)

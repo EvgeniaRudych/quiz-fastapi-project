@@ -51,7 +51,6 @@ class VerifyToken():
 def get_user_info(token=Depends(token_auth_scheme)):
     try:
         main_info = UserInfoToken(**VerifyToken(token.credentials).verify())
-        print(main_info.azp)
 
     except ValidationError as error:
         raise HTTPException(status_code=404, detail="Something went wrong")
