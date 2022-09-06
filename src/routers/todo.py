@@ -12,72 +12,13 @@ from sqlalchemy import ForeignKey, and_, select, insert
 from starlette import status
 
 from connections import get_redis, get_database
+from core.models.models import quizzes, questions, answers, quiz_result
 from core.schemas.schemas import Quizzes, QuizzesInput, QuizWithQuestions, AnswerInput, QuizResult
 from utils import get_user_info
 
 router = APIRouter()
 
 metadata = sqlalchemy.MetaData()
-
-quizzes = sqlalchemy.Table(
-    "quizzes",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("title", sqlalchemy.String(500)),
-    sqlalchemy.Column("description", sqlalchemy.String(500)),
-    sqlalchemy.Column("is_active", sqlalchemy.Boolean)
-
-)
-
-questions = sqlalchemy.Table(
-    "questions",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("quiz_id", sqlalchemy.Integer, ForeignKey("quizzes.id")),
-    sqlalchemy.Column("question_text", sqlalchemy.String(500))
-
-)
-
-answers = sqlalchemy.Table(
-    "answers",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("answer_text", sqlalchemy.String),
-    sqlalchemy.Column("question_id", sqlalchemy.Integer, ForeignKey("questions.id")),
-
-)
-
-categories = sqlalchemy.Table(
-    "categories",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("name", sqlalchemy.String),
-    sqlalchemy.Column("question_text", sqlalchemy.String(500)),
-    sqlalchemy.Column("description", sqlalchemy.String(500))
-
-)
-
-question_categories = sqlalchemy.Table(
-    "question_categories",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("question_id", sqlalchemy.Integer, ForeignKey("questions.id")),
-    sqlalchemy.Column("category_id", sqlalchemy.Integer, ForeignKey("categories.id"))
-
-)
-
-quiz_result = sqlalchemy.Table(
-    "quiz_result",
-    metadata,
-
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("user_score", sqlalchemy.Float),
-    sqlalchemy.Column("max_score", sqlalchemy.Float),
-    sqlalchemy.Column("finished_at", sqlalchemy.DateTime),
-    sqlalchemy.Column("user_id", sqlalchemy.String),
-    sqlalchemy.Column("quiz_id", sqlalchemy.Integer, ForeignKey("quizzes.id"))
-
-)
 
 
 @router.get("/")
@@ -115,44 +56,57 @@ async def create_quiz(database=Depends(get_database), quiz: QuizzesInput = Depen
     return {**row}
 
 
-# який джойн мені треба: квіз і усі питання які мають ФК на його айді, при цьому юзер авторизований, і також джойн питань та відповідей
-# ми маємо також порахувати результат і записати його у поле юзера. Після цього hset
-
 # мета: юзер натискає "пройти квіз" і бачить усі питання. /get/quizz/id/ підтягує квіз з його питаннями ЗРОБЛЕНО
+# РЕДАГУВАННЯ: ДЖОЙН: зараз я дістаю квіз по урлі і потім шукаю питання по where з цим квізом
+# ДЖОЙН : квіз і питання (айді і квіз айді)
+
 
 # Потім відподає на питання і ми їх порівнюємо з відповідями, /post/quiz-res/id відправляє джейсон ({відповіді: питання}) користувача на сервер
 # і там ми його порівнюємо з даними моделі answers і підраховуємо бали, потім записуємо їх у таблицю Quiz_result
 # потім записуємо їх у редіс
+from sqlalchemy import join
 
+
+# from sqlalchemy.sql import select
+# j = students.join(addresses, students.c.id == addresses.c.st_id)
+# stmt = select([students]).select_from(j)
+# result = conn.execute(stmt)
+# result.fetchall()
 @router.get("/api/v1/quizzes/{id}/", response_model=QuizWithQuestions, status_code=200)
 async def get_quiz(id: int, database=Depends(get_database), token: str = Depends(get_user_info)):
-    query = quizzes.select().where(quizzes.c.id == id)
-    quiz = await database.fetch_one(query)
-    quiz_questions_query = questions.select().where(questions.c.quiz_id == quiz.id)
-    quiz_questions = await database.fetch_all(quiz_questions_query)
-    return {"id": quiz.id, "title": quiz.title, "questions": quiz_questions}
+    # query = quizzes.select().where(quizzes.c.id == id)
+    # quiz = await database.fetch_one(query)
+    # quiz_questions_query = questions.select().where(questions.c.quiz_id == quiz.id)
+    # quiz_questions = await database.fetch_all(quiz_questions_query)
+    quizz_questions_join = quizzes.join(questions, quizzes.c.id == questions.c.quiz_id)
+    stmt = select([questions]).select_from(quizz_questions_join)
+    result = await database.fetch_all(stmt)
+    print(result)
+    print([dict(data) for data in result])
+    return QuizWithQuestions(id=id, questions=result)
+    # На цей ендпойнт юзер присилає відповіді {question: answer_text} - відповідей багато, тому це ліст.
+    # {
+    #   "questions": [{"q1":"answer1"}, {"q2":"answer2"}]
+    # }
+    # і там ми його порівнюємо з даними моделі answers і підраховуємо бали,
+    # потім записуємо їх у таблицю Quiz_result
+    # # потім записуємо їх у редіс
+    # далі треба зробити алгоритм порівняння відповідей юзера і відповідей що у моделі Answers
+    # вручну створюю змінну флоат, куда плюсую бали за кожну правильну відповідь
+    # цю зміну я записую у модель Quiz_result і її ж повертаю у респонсі
+
+    # {"azp": quiz_id, score}
+    # Редіс автоматично зберігає усі відповіді юзер на ОДИН квіз
+    # у вигляді {userid_quizid: {question1: "answer", quis2:answer} }
 
 
-# На цей ендпойнт юзер присилає відповіді {question: answer_text} - відповідей багато, тому це ліст.
-# {
-#   "questions": [{"q1":"answer1"}, {"q2":"answer2"}]
-# }
-# і там ми його порівнюємо з даними моделі answers і підраховуємо бали,
-# потім записуємо їх у таблицю Quiz_result
-# # потім записуємо їх у редіс
-# далі треба зробити алгоритм порівняння відповідей юзера і відповідей що у моделі Answers
-# вручну створюю змінну флоат, куда плюсую бали за кожну правильну відповідь
-# цю зміну я записую у модель Quiz_result і її ж повертаю у респонсі
-
-# {"azp": quiz_id, score}
-# Редіс автоматично зберігає усі відповіді юзер на ОДИН квіз
-# у вигляді {userid_quizid: {question1: "answer", quis2:answer} }
 @router.post("/api/v1/pass/quizzes/{id}/", response_model=QuizResult, status_code=200)
 async def pass_quizzes(id: int, answers_input: List[AnswerInput], database=Depends(get_database),
                        redis=Depends(get_redis),
                        token: str = Depends(get_user_info)):
     right_answers_query = select(answers.join(questions,
-                                              and_(answers.c.question_id == questions.c.id, questions.c.quiz_id == id)))
+                                              and_(answers.c.question_id == questions.c.id,
+                                                   questions.c.quiz_id == id)))
     right_answers = await database.fetch_all(right_answers_query)
     quiz_score = 0
     dict_of_right_answers = {}
@@ -169,12 +123,13 @@ async def pass_quizzes(id: int, answers_input: List[AnswerInput], database=Depen
                      redis_client=redis, quiz_score=quiz_score)
     return {"user_score": quiz_score}
 
+    # мій алгоритм csv: створюю файл і записую туди скор юзера.
+    # далі роблю перевірку у редісі чи існують результати користувача
+    # якщо вони існують, то теж записуємо їх у файл, усі файли зберігаємо у папку storage
+    # далі функція повертає файл.
+    # question_id, answer
 
-# мій алгоритм csv: створюю файл і записую туди скор юзера.
-# далі роблю перевірку у редісі чи існують результати користувача
-# якщо вони існують, то теж записуємо їх у файл, усі файли зберігаємо у папку storage
-# далі функція повертає файл.
-# question_id, answer
+
 def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_client: Redis, quiz_score):
     redis_key = f"{user_id}:{quiz_id}:{quiz_result_id}"
     res_to_save = {}
@@ -183,17 +138,20 @@ def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_clien
     redis_client.hset(name=redis_key, mapping=res_to_save)
     with open(f"/home/evgenia/PycharmProjects/app/storage/{user_id}.csv", 'w', encoding='UTF8') as f:
         writer = csv.writer(f)
-        writer.writerow(["user_id","question&answer"])
+        writer.writerow(["user_id", "question&answer"])
         if redis_client.hgetall(name=redis_key) is not None:
             writer.writerow([user_id, redis_client.hgetall(name=redis_key)])
             return f
 
 
 @router.patch("/api/v1/quizzes/{id}/", response_model=Quizzes, status_code=200)
+
+
 async def update_quiz(id: int, database=Depends(get_database), quiz: Quizzes = Depends(),
                       token: str = Depends(get_user_info)):
     query = quizzes.insert().values(title=quiz.title, description=quiz.description, is_active=quiz.is_active)
-    query = quizzes.select().where(quizzes.c.id == id)
+    record_id = await database.execute(query)
+    query = quizzes.select().where(quizzes.c.id == record_id)
     row = await database.fetch_one(query)
     return row
 

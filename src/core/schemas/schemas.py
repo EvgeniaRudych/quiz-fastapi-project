@@ -45,7 +45,6 @@ class Questions(BaseModel):
 
 class QuizWithQuestions(BaseModel):
     id: int
-    title: str
     questions: typing.List[Questions]
 
 
