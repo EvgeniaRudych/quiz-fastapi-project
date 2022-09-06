@@ -136,15 +136,14 @@ def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_clien
     redis_client.hset(name=redis_key, mapping=res_to_save)
     with open(f"/home/evgenia/PycharmProjects/app/storage/{user_id}.csv", 'w', encoding='UTF8') as f:
         writer = csv.writer(f)
-        writer.writerow(["user_id", "question&answer"])
+        writer.writerow(["user_id", "question_id", "answer"])
         if redis_client.hgetall(name=redis_key) is not None:
-            writer.writerow([user_id, redis_client.hgetall(name=redis_key)])
-            return f
+            for i in dict(redis_client.hgetall(name=redis_key)).items():
+                writer.writerow([user_id, i[0], i[1]])
+        return f
 
 
 @router.patch("/api/v1/quizzes/{id}/", response_model=Quizzes, status_code=200)
-
-
 async def update_quiz(id: int, database=Depends(get_database), quiz: Quizzes = Depends(),
                       token: str = Depends(get_user_info)):
     query = quizzes.insert().values(title=quiz.title, description=quiz.description, is_active=quiz.is_active)
