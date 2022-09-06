@@ -81,8 +81,6 @@ async def get_quiz(id: int, database=Depends(get_database), token: str = Depends
     quizz_questions_join = quizzes.join(questions, quizzes.c.id == questions.c.quiz_id)
     stmt = select([questions]).select_from(quizz_questions_join)
     result = await database.fetch_all(stmt)
-    print(result)
-    print([dict(data) for data in result])
     return QuizWithQuestions(id=id, questions=result)
     # На цей ендпойнт юзер присилає відповіді {question: answer_text} - відповідей багато, тому це ліст.
     # {
