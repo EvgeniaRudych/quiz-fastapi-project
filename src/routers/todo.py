@@ -37,7 +37,7 @@ async def private(token: str = Depends(get_user_info)):
     return token
 
 
-# QUIZZ CRUD
+
 @router.get("/api/v1/quizzes/", response_model=List[Quizzes], status_code=200)
 async def get_list_of_quizzes(database=Depends(get_database), token: str = Depends(get_user_info)):
     query = quizzes.select()
@@ -56,14 +56,7 @@ async def create_quiz(database=Depends(get_database), quiz: QuizzesInput = Depen
     return {**row}
 
 
-# мета: юзер натискає "пройти квіз" і бачить усі питання. /get/quizz/id/ підтягує квіз з його питаннями ЗРОБЛЕНО
-# РЕДАГУВАННЯ: ДЖОЙН: зараз я дістаю квіз по урлі і потім шукаю питання по where з цим квізом
-# ДЖОЙН : квіз і питання (айді і квіз айді)
 
-
-# Потім відподає на питання і ми їх порівнюємо з відповідями, /post/quiz-res/id відправляє джейсон ({відповіді: питання}) користувача на сервер
-# і там ми його порівнюємо з даними моделі answers і підраховуємо бали, потім записуємо їх у таблицю Quiz_result
-# потім записуємо їх у редіс
 from sqlalchemy import join
 
 
@@ -82,21 +75,7 @@ async def get_quiz(id: int, database=Depends(get_database), token: str = Depends
     stmt = select([questions]).select_from(quizz_questions_join)
     result = await database.fetch_all(stmt)
     return QuizWithQuestions(id=id, questions=result)
-    # На цей ендпойнт юзер присилає відповіді {question: answer_text} - відповідей багато, тому це ліст.
-    # {
-    #   "questions": [{"q1":"answer1"}, {"q2":"answer2"}]
-    # }
-    # і там ми його порівнюємо з даними моделі answers і підраховуємо бали,
-    # потім записуємо їх у таблицю Quiz_result
-    # # потім записуємо їх у редіс
-    # далі треба зробити алгоритм порівняння відповідей юзера і відповідей що у моделі Answers
-    # вручну створюю змінну флоат, куда плюсую бали за кожну правильну відповідь
-    # цю зміну я записую у модель Quiz_result і її ж повертаю у респонсі
-
-    # {"azp": quiz_id, score}
-    # Редіс автоматично зберігає усі відповіді юзер на ОДИН квіз
-    # у вигляді {userid_quizid: {question1: "answer", quis2:answer} }
-
+    
 
 @router.post("/api/v1/pass/quizzes/{id}/", response_model=QuizResult, status_code=200)
 async def pass_quizzes(id: int, answers_input: List[AnswerInput], database=Depends(get_database),
@@ -120,12 +99,6 @@ async def pass_quizzes(id: int, answers_input: List[AnswerInput], database=Depen
     get_user_results(token.azp, quiz_id=id, quiz_result_id=quiz_final_res, user_answers=answers_input,
                      redis_client=redis, quiz_score=quiz_score)
     return {"user_score": quiz_score}
-
-    # мій алгоритм csv: створюю файл і записую туди скор юзера.
-    # далі роблю перевірку у редісі чи існують результати користувача
-    # якщо вони існують, то теж записуємо їх у файл, усі файли зберігаємо у папку storage
-    # далі функція повертає файл.
-    # question_id, answer
 
 
 def get_user_results(user_id, quiz_id, quiz_result_id, user_answers, redis_client: Redis, quiz_score):
