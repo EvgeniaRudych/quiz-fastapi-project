@@ -1,76 +1,67 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, true, ForeignKey
+import sqlalchemy
+from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+metadata = sqlalchemy.MetaData()
 
-class Quiz_result(Base):
-    __tablename__ = "quiz_result"
-    id = Column(Integer, primary_key=True, index=True)
-    user_score = Column(Float, nullable=False)
-    max_score = Column(Float, nullable=False)
-    finished_at = Column(DateTime, default=datetime.now())
-    user_id = Column(DateTime, default=datetime.now())
+quizzes = sqlalchemy.Table(
+    "quizzes",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("title", sqlalchemy.String(500)),
+    sqlalchemy.Column("description", sqlalchemy.String(500)),
+    sqlalchemy.Column("is_active", sqlalchemy.Boolean)
 
+)
 
-class Password(Base):
-    __tablename__ = "password"
+questions = sqlalchemy.Table(
+    "questions",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("quiz_id", sqlalchemy.Integer, ForeignKey("quizzes.id")),
+    sqlalchemy.Column("question_text", sqlalchemy.String(500))
 
-    id = Column(Integer, primary_key=True, index=True)
-    password = Column(String, index=True)
+)
 
+answers = sqlalchemy.Table(
+    "answers",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("answer_text", sqlalchemy.String),
+    sqlalchemy.Column("question_id", sqlalchemy.Integer, ForeignKey("questions.id")),
 
-class User(Base):
-    __tablename__ = "user"
+)
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    name = Column(String, index=True)
-    is_superuser = Column(Boolean, default=False)
-    password_id = relationship("Password", back_populates="password")
-    created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, default=datetime.now())
+categories = sqlalchemy.Table(
+    "categories",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("name", sqlalchemy.String),
+    sqlalchemy.Column("question_text", sqlalchemy.String(500)),
+    sqlalchemy.Column("description", sqlalchemy.String(500))
 
+)
 
-class Categories(Base):
-    __tablename__ = "categories"
+question_categories = sqlalchemy.Table(
+    "question_categories",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("question_id", sqlalchemy.Integer, ForeignKey("questions.id")),
+    sqlalchemy.Column("category_id", sqlalchemy.Integer, ForeignKey("categories.id"))
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String,  index=True)
-    description = Column(String, index=True)
+)
 
+quiz_result = sqlalchemy.Table(
+    "quiz_result",
+    metadata,
 
-class Quizzes(Base):
-    __tablename__ = "quizzes"
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("user_score", sqlalchemy.Float),
+    sqlalchemy.Column("max_score", sqlalchemy.Float),
+    sqlalchemy.Column("finished_at", sqlalchemy.DateTime),
+    sqlalchemy.Column("user_id", sqlalchemy.String),
+    sqlalchemy.Column("quiz_id", sqlalchemy.Integer, ForeignKey("quizzes.id"))
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
-    description = Column(String, index=True, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-
-
-class Questions(Base):
-    __tablename__ = "questions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    question_text = Column(String, index=True, nullable=False)
-    quiz_id = Column(ForeignKey("quizzes.id"))
-
-
-class Answers(Base):
-    __tablename__ = "answers"
-
-    id = Column(Integer, primary_key=True, index=True)
-    answer_text = Column(String, nullable=False)
-    question_id = Column(ForeignKey("questions.id"))
-    is_correct = Column(Boolean, nullable=False)
-
-
-class Question_Categories(Base):
-    __tablename__ = "question_categories"
-
-    id = Column(Integer, primary_key=True, index=True)
-    question_id = Column(ForeignKey("questions.id"))
-    category_id = Column(ForeignKey("categories.id"))
+)

@@ -1,6 +1,4 @@
-import os
 import jwt
-from configparser import ConfigParser
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
@@ -11,12 +9,6 @@ from core.schemas.schemas import UserInfoToken
 
 token_auth_scheme = HTTPBearer()
 
-
-# domain = system_config.domain
-# algorithms = system_config.algorithms
-# audience = system_config.api_audience
-# issuer = system_config.issuer
-#
 
 class VerifyToken():
     """Does all the token verification using PyJWT"""
@@ -56,14 +48,11 @@ class VerifyToken():
         return payload
 
 
-
-
 def get_user_info(token=Depends(token_auth_scheme)):
     try:
         main_info = UserInfoToken(**VerifyToken(token.credentials).verify())
 
     except ValidationError as error:
-        raise HTTPException(status_code=401, detail="Credentials were not provided")
+        raise HTTPException(status_code=404, detail="Something went wrong")
 
     return main_info
-
