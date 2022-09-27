@@ -60,17 +60,9 @@ async def create_quiz(database=Depends(get_database), quiz: QuizzesInput = Depen
 from sqlalchemy import join
 
 
-# from sqlalchemy.sql import select
-# j = students.join(addresses, students.c.id == addresses.c.st_id)
-# stmt = select([students]).select_from(j)
-# result = conn.execute(stmt)
-# result.fetchall()
+
 @router.get("/api/v1/quizzes/{id}/", response_model=QuizWithQuestions, status_code=200)
 async def get_quiz(id: int, database=Depends(get_database), token: str = Depends(get_user_info)):
-    # query = quizzes.select().where(quizzes.c.id == id)
-    # quiz = await database.fetch_one(query)
-    # quiz_questions_query = questions.select().where(questions.c.quiz_id == quiz.id)
-    # quiz_questions = await database.fetch_all(quiz_questions_query)
     quizz_questions_join = quizzes.join(questions, quizzes.c.id == questions.c.quiz_id)
     stmt = select([questions]).select_from(quizz_questions_join)
     result = await database.fetch_all(stmt)
